@@ -212,7 +212,7 @@ func (p parsedYAML) lookup(n *yaml.Node, keys []string) (*parsedYAML, error) {
 			if err != nil {
 				return nil, errors.Wrap(err, "parse array index")
 			}
-			if int(i) >= len(n.Content) {
+			if i >= int64(len(n.Content)) {
 				return nil, nil
 			}
 			n = n.Content[i]
