@@ -22,6 +22,10 @@ func (m *MultiSource) Copy() *MultiSource {
 	}
 }
 
+// NewMultiSource creates a source that is the combination of multiple sources.
+// For containers (maps, slices) this new source combines the elements from
+// the provided sources.  For scalar values, it takes its value from the first
+// source that has a value present for the field in question.
 func NewMultiSource(sources ...Source) *MultiSource {
 	if len(sources) == 0 {
 		return &MultiSource{
@@ -123,14 +127,34 @@ func CombineSources(sources ...Source) Source {
 	}
 }
 
+// AddSource adds an additional source to a MultiSource, modifying
+// the MultiSource
 func (m *MultiSource) AddSource(source Source) {
 	m.sources = append(m.sources, source)
 }
 
 func (m *MultiSource) Recurse(keys ...string) Source {
+	return m.recurse(keys...)
+}
+
+func (m *MultiSource) recurse(keys ...string) *MultiSource {
 	n := make([]Source, 0, len(m.sources))
+	offsets := make([]int, len(keys))
 	for _, source := range m.sources {
-		r := source.Recurse(keys...)
+		r := source
+		for i, k := range keys {
+			r = r.Recurse(k)
+			if r == nil {
+				break
+			}
+			if r.Type() == Slice {
+				length, _ := r.Len()
+				if offsets[i] != 0 {
+					r = WithOffset(r, offsets[i])
+				}
+				offsets[i] += length
+			}
+		}
 		if r != nil {
 			n = append(n, r)
 		}
@@ -147,6 +171,10 @@ func (m *MultiSource) Recurse(keys ...string) Source {
 
 // find doesn't guarantee that something exists
 func (m *MultiSource) find(keys []string) (Source, bool) {
+	m = m.recurse(keys...)
+	if m == nil {
+		return nil, false
+	}
 	switch len(m.sources) {
 	case 0:
 		return nil, false
@@ -155,14 +183,14 @@ func (m *MultiSource) find(keys []string) (Source, bool) {
 	}
 	if m.first {
 		for _, source := range m.sources {
-			if source.Exists(keys...) {
+			if source.Exists() {
 				return source, true
 			}
 		}
 	} else {
 		for i := len(m.sources) - 1; i >= 0; i-- {
 			source := m.sources[i]
-			if source.Exists(keys...) {
+			if source.Exists() {
 				return source, true
 			}
 		}
@@ -177,35 +205,35 @@ func (m *MultiSource) Exists(keys ...string) bool {
 
 func (m *MultiSource) GetBool(keys ...string) (bool, error) {
 	if source, ok := m.find(keys); ok {
-		return source.GetBool(keys...)
+		return source.GetBool()
 	}
 	return false, errors.Wrapf(ErrDoesNotExist, "key %v does not exist", keys)
 }
 
 func (m *MultiSource) GetInt(keys ...string) (int64, error) {
 	if source, ok := m.find(keys); ok {
-		return source.GetInt(keys...)
+		return source.GetInt()
 	}
 	return 0, errors.Wrapf(ErrDoesNotExist, "key %v does not exist", keys)
 }
 
 func (m *MultiSource) GetFloat(keys ...string) (float64, error) {
 	if source, ok := m.find(keys); ok {
-		return source.GetFloat(keys...)
+		return source.GetFloat()
 	}
 	return 0, errors.Wrapf(ErrDoesNotExist, "key %v does not exist", keys)
 }
 
 func (m *MultiSource) GetString(keys ...string) (string, error) {
 	if source, ok := m.find(keys); ok {
-		return source.GetString(keys...)
+		return source.GetString()
 	}
 	return "", errors.Wrapf(ErrDoesNotExist, "key %v does not exist", keys)
 }
 
 func (m *MultiSource) Type(keys ...string) NodeType {
 	if source, ok := m.find(keys); ok {
-		return source.Type(keys...)
+		return source.Type()
 	}
 	return Undefined
 }
@@ -216,7 +244,7 @@ func (m *MultiSource) Keys(keys ...string) ([]string, error) {
 	}
 	if !m.combine {
 		if source, ok := m.find(keys); ok {
-			return source.Keys(keys...)
+			return source.Keys()
 		}
 		return nil, errors.Wrapf(ErrDoesNotExist, "key %v does not exist", keys)
 	}
@@ -258,7 +286,7 @@ func (m *MultiSource) Len(keys ...string) (int, error) {
 	}
 	if !m.combine {
 		if source, ok := m.find(keys); ok {
-			return source.Len(keys...)
+			return source.Len()
 		}
 		return 0, errors.Wrapf(ErrDoesNotExist, "key %v does not exist", keys)
 	}

@@ -25,10 +25,7 @@ func UnmarshalJSON(data []byte) (Source, error) {
 
 func (p parsedJSON) Exists(key ...string) bool {
 	v := p.value.Get(key...)
-	if v == nil {
-		return false
-	}
-	return true
+	return v != nil
 }
 
 func (p parsedJSON) Recurse(key ...string) Source {
