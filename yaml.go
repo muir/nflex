@@ -217,8 +217,8 @@ func (p parsedYAML) lookup(n *yaml.Node, keys []string) (*parsedYAML, error) {
 			}
 			n = n.Content[i]
 		case yaml.MappingNode:
-			if cache, ok := p.cache[n]; !ok {
-				cache = make(map[string]*yaml.Node)
+			if _, ok := p.cache[n]; !ok {
+				cache := make(map[string]*yaml.Node)
 				p.cache[n] = cache
 				if len(n.Content)%2 != 0 {
 					return nil, errors.Errorf("mapping node %s/%s has non-even content", n.Tag, n.Anchor)
