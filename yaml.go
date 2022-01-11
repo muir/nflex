@@ -113,23 +113,26 @@ var intRE = regexp.MustCompile(`^\d+$`)
 var floatRE = regexp.MustCompile(`^(?:(?:\.\d+(?:[eE][-+]?\d+)?)|(?:\d+(?:\.\d+(?:[eE][-+]?\d+)?)?))$`)
 
 func (p parsedYAML) Type(keys ...string) NodeType {
-	n, err := p.lookupScalar(keys)
+	n, err := p.lookup(p.root, keys)
 	if err != nil {
 		return Undefined
 	}
-	switch n.Kind {
+	if n == nil {
+		return Nil
+	}
+	switch n.root.Kind {
 	case yaml.DocumentNode, yaml.MappingNode:
 		return Map
 	case yaml.SequenceNode:
 		return Slice
 	case yaml.ScalarNode:
-		if boolRE.MatchString(n.Value) {
+		if boolRE.MatchString(n.root.Value) {
 			return Bool
 		}
-		if intRE.MatchString(n.Value) {
+		if intRE.MatchString(n.root.Value) {
 			return Int
 		}
-		if floatRE.MatchString(n.Value) {
+		if floatRE.MatchString(n.root.Value) {
 			return Float
 		}
 		return String
@@ -233,7 +236,9 @@ func (p parsedYAML) lookup(n *yaml.Node, keys []string) (*parsedYAML, error) {
 		}
 		keys = keys[1:]
 	}
-	if n == nil { return nil, nil }
+	if n == nil {
+		return nil, nil
+	}
 	return &parsedYAML{
 		root:       n,
 		cache:      p.cache,

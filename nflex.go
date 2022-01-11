@@ -17,12 +17,12 @@ type NodeType int
 
 const (
 	Undefined NodeType = iota // node does not exist
+	Slice
 	Nil
 	String
 	Float
 	Int
 	Bool
-	Slice
 	Map
 )
 
