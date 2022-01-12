@@ -40,6 +40,14 @@ func TestRegression01(t *testing.T) {
 	}
 }
 
+func TestRegression02(t *testing.T) {
+	s1, err := UnmarshalFile("rdata1.yaml", WithFS(content))
+	require.NoError(t, err, "unmarshal rdata1")
+	m := NewMultiSource(s1)
+	n := m.Recurse("foo")
+	assert.True(t, n == nil, "recurse foo is nil")
+}
+
 func getLen(t *testing.T, s Source, args ...string) int {
 	l, err := s.Len(args...)
 	require.NoError(t, err, "getLen")

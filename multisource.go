@@ -134,7 +134,12 @@ func (m *MultiSource) AddSource(source Source) {
 }
 
 func (m *MultiSource) Recurse(keys ...string) Source {
-	return m.recurse(keys...)
+	ms := m.recurse(keys...)
+	if ms == nil {
+		// avoid typed nil
+		return nil
+	}
+	return ms
 }
 
 func (m *MultiSource) recurse(keys ...string) *MultiSource {

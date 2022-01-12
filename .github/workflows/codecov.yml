@@ -1,6 +1,6 @@
 name: CodeCov Test and coverage
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   build:
@@ -15,4 +15,4 @@ jobs:
       - name: Run coverage
         run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
       - name: Upload coverage to Codecov
-        run: bash <(curl -s https://codecov.io/bash)
+        run: env CODECOV_TOKEN=764eb126-04d6-46cf-a952-cb51766c8572 bash <(curl -s https://codecov.io/bash)
