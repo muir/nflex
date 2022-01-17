@@ -84,16 +84,16 @@ func (o offset) GetString(keys ...string) (string, error) {
 func (o offset) Recurse(keys ...string) Source {
 	tk, err := o.transform(keys)
 	if err != nil {
-		debug("nflex/offset Recurse(", keys, ")", o.debugID, "-> nil")
+		debug("nflex/offset Recurse(", keys, ")", id(o), "-> nil")
 		return nil
 	}
 	r := o.source.Recurse(tk...)
 	if len(o.offsets) <= len(keys) {
-		debug("nflex/offset Recurse(", keys, ")", o.debugID, "-> no offset")
+		debug("nflex/offset Recurse(", keys, ")", id(o), "-> no offset")
 		return r
 	}
 	n := WithOffset(r, o.offsets[len(keys):]...)
-	debug("nflex/offset Recurse(", keys, ")", o.debugID, "->", n.(offset).debugID)
+	debug("nflex/offset Recurse(", keys, ")", id(o), "->", id(n))
 	return n
 }
 
