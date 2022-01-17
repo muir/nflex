@@ -18,10 +18,11 @@ func (m *MultiSource) Copy() *MultiSource {
 	n := make([]Source, len(m.sources))
 	copy(n, m.sources)
 	c := &MultiSource{
-		first:   m.first,
-		combine: m.combine,
-		sources: n,
-		debugID: debugID(),
+		first:      m.first,
+		combine:    m.combine,
+		sources:    n,
+		debugID:    debugID(),
+		pathToHere: m.pathToHere,
 	}
 	debug("nflex/multi Copy", id(m), "->", id(c))
 	return c
