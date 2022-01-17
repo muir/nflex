@@ -8,6 +8,7 @@ import (
 )
 
 type parsedJSON struct {
+	debugID    int
 	value      *fastjson.Value
 	pathToHere []string
 }
@@ -19,7 +20,8 @@ func UnmarshalJSON(data []byte) (Source, error) {
 		return nil, errors.Wrap(err, "json")
 	}
 	return parsedJSON{
-		value: value,
+		debugID: debugID(),
+		value:   value,
 	}, nil
 }
 
@@ -30,16 +32,21 @@ func (p parsedJSON) Exists(key ...string) bool {
 
 func (p parsedJSON) Recurse(key ...string) Source {
 	if len(key) == 0 {
+		debug("nflex/json: Recurse() ->", id(p))
 		return p
 	}
 	v := p.value.Get(key...)
 	if v == nil {
+		debug("nflex/json: Recurse(", key, ")", id(p), "-> nil")
 		return nil
 	}
-	return parsedJSON{
+	n := parsedJSON{
 		value:      v,
 		pathToHere: combine(p.pathToHere, key),
+		debugID:    debugID(),
 	}
+	debug("nflex/json: Recurse(", key, ")", id(p), "->", id(n))
+	return n
 }
 
 func (p parsedJSON) GetBool(key ...string) (bool, error) {

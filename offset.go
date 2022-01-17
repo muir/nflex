@@ -9,6 +9,7 @@ import (
 type offset struct {
 	offsets []int
 	source  Source
+	debugID int
 }
 
 // WithOffset returns a modified source that offsets slice lookups
@@ -20,6 +21,7 @@ func WithOffset(source Source, offsets ...int) Source {
 	return offset{
 		offsets: offsets,
 		source:  source,
+		debugID: debugID(),
 	}
 }
 
@@ -82,13 +84,17 @@ func (o offset) GetString(keys ...string) (string, error) {
 func (o offset) Recurse(keys ...string) Source {
 	tk, err := o.transform(keys)
 	if err != nil {
+		debug("nflex/offset Recurse(", keys, ")", o.debugID, "-> nil")
 		return nil
 	}
 	r := o.source.Recurse(tk...)
 	if len(o.offsets) <= len(keys) {
+		debug("nflex/offset Recurse(", keys, ")", o.debugID, "-> no offset")
 		return r
 	}
-	return WithOffset(r, o.offsets[len(keys):]...)
+	n := WithOffset(r, o.offsets[len(keys):]...)
+	debug("nflex/offset Recurse(", keys, ")", o.debugID, "->", n.(offset).debugID)
+	return n
 }
 
 func (o offset) Keys(keys ...string) ([]string, error) {

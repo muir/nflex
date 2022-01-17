@@ -7,8 +7,9 @@ import (
 var _ CanMutate = &prefixSource{}
 
 type prefixSource struct {
-	prefix []string
-	source Source
+	prefix  []string
+	source  Source
+	debugID int
 }
 
 // NewPrefixSource wraps a Source such that it applies a path prefix
@@ -18,16 +19,20 @@ func NewPrefixSource(source Source, prefix ...string) Source {
 		return source
 	}
 	return prefixSource{
-		prefix: prefix,
-		source: source,
+		prefix:  prefix,
+		source:  source,
+		debugID: debugID(),
 	}
 }
 
 func (m prefixSource) Mutate(mutation Mutation) Source {
-	return prefixSource{
-		prefix: m.prefix,
-		source: mutation.Apply(m.source),
+	n := prefixSource{
+		prefix:  m.prefix,
+		source:  mutation.Apply(m.source),
+		debugID: debugID(),
 	}
+	debug("nflex/prefix Mutate", id(m), "->", id(n))
+	return n
 }
 
 func (m prefixSource) recurse(keys []string) ([]string, []string, bool) {
@@ -44,22 +49,28 @@ func (m prefixSource) recurse(keys []string) ([]string, []string, bool) {
 
 func (m prefixSource) Recurse(keys ...string) Source {
 	if len(keys) == 0 {
+		debug("nflex/prefix Recurse()", id(m), "-> self")
 		return m
 	}
 	np, newKeys, mismatch := m.recurse(keys)
 	if mismatch {
+		debug("nflex/prefix Recurse(", keys, ")", id(m), "-> nil")
 		return nil
 	}
 	if len(np) == 0 {
 		if len(newKeys) == 0 {
+			debug("nflex/prefix Recurse(", keys, ")", id(m), "-> inner")
 			return m.source
 		}
 		return m.source.Recurse(newKeys...)
 	}
-	return prefixSource{
-		prefix: np,
-		source: m.source,
+	n := prefixSource{
+		prefix:  np,
+		source:  m.source,
+		debugID: debugID(),
 	}
+	debug("nflex/prefix Recurse(", keys, ")", id(m), "->", id(n))
+	return n
 }
 
 func (m prefixSource) Exists(keys ...string) bool {
