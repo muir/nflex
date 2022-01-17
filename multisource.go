@@ -56,10 +56,11 @@ func NewMultiSource(sources ...Source) *MultiSource {
 
 func (m *MultiSource) Mutate(mutation Mutation) Source {
 	n := &MultiSource{
-		first:   m.first,
-		combine: m.combine,
-		sources: make([]Source, len(m.sources)),
-		debugID: debugID(),
+		first:      m.first,
+		combine:    m.combine,
+		sources:    make([]Source, len(m.sources)),
+		debugID:    debugID(),
+		pathToHere: m.pathToHere,
 	}
 	debug("nflex/multi: Mutate", id(m), "->", id(n))
 	for i, source := range m.sources {
