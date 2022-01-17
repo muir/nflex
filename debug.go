@@ -6,8 +6,6 @@ package nflex
 import (
 	"fmt"
 	"log"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"sync/atomic"
 )
