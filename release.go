@@ -1,4 +1,5 @@
 //go:build !debugNflex
+// +build !debugNflex
 
 package nflex
 
