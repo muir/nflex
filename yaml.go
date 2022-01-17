@@ -14,6 +14,7 @@ type parsedYAML struct {
 	// cache turns that into a map
 	cache map[*yaml.Node]map[string]*yaml.Node
 
+	debugID    int
 	pathToHere []string
 }
 
@@ -24,8 +25,9 @@ func UnmarshalYAML(data []byte) (Source, error) {
 		return parsedYAML{}, errors.Wrap(err, "yaml")
 	}
 	return parsedYAML{
-		root:  &node,
-		cache: make(map[*yaml.Node]map[string]*yaml.Node),
+		root:    &node,
+		cache:   make(map[*yaml.Node]map[string]*yaml.Node),
+		debugID: debugID(),
 	}, nil
 }
 
@@ -39,17 +41,22 @@ func (p parsedYAML) Exists(keys ...string) bool {
 
 func (p parsedYAML) Recurse(keys ...string) Source {
 	if len(keys) == 0 {
+		debug("nflex/yaml Recurse()", id(p), "-> self")
 		return p
 	}
 	n, err := p.lookup(p.root, keys)
 	if err != nil || n == nil {
+		debug("nflex/yaml Recurse(", keys, ")", id(p), "-> nil")
 		return nil
 	}
-	return parsedYAML{
+	ny := parsedYAML{
 		root:       n.root,
 		cache:      p.cache,
 		pathToHere: combine(p.pathToHere, keys),
+		debugID:    debugID(),
 	}
+	debug("nflex/yaml Recurse(", keys, ")", id(p), "->", id(ny))
+	return ny
 }
 
 func (p parsedYAML) GetBool(keys ...string) (bool, error) {

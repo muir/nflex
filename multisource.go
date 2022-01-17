@@ -7,19 +7,24 @@ import (
 var _ CanMutate = &MultiSource{}
 
 type MultiSource struct {
-	sources []Source
-	first   bool
-	combine bool
+	sources    []Source
+	first      bool
+	combine    bool
+	debugID    int
+	pathToHere []string
 }
 
 func (m *MultiSource) Copy() *MultiSource {
 	n := make([]Source, len(m.sources))
 	copy(n, m.sources)
-	return &MultiSource{
+	c := &MultiSource{
 		first:   m.first,
 		combine: m.combine,
 		sources: n,
+		debugID: debugID(),
 	}
+	debug("nflex/multi Copy", id(m), "->", id(c))
+	return c
 }
 
 // NewMultiSource creates a source that is the combination of multiple sources.
@@ -31,17 +36,20 @@ func NewMultiSource(sources ...Source) *MultiSource {
 		return &MultiSource{
 			first:   true,
 			combine: true,
+			debugID: debugID(),
 		}
 	}
 	if m, ok := sources[0].(*MultiSource); ok {
 		m = m.Copy()
 		m.sources = append(m.sources, sources[1:]...)
+		debug("nflex/multi: New from existing")
 		return m
 	}
 	return &MultiSource{
 		first:   true,
 		combine: true,
 		sources: sources,
+		debugID: debugID(),
 	}
 }
 
@@ -50,7 +58,9 @@ func (m *MultiSource) Mutate(mutation Mutation) Source {
 		first:   m.first,
 		combine: m.combine,
 		sources: make([]Source, len(m.sources)),
+		debugID: debugID(),
 	}
+	debug("nflex/multi: Mutate", id(m), "->", id(n))
 	for i, source := range m.sources {
 		n.sources[i] = mutation.Apply(source)
 	}
@@ -143,6 +153,7 @@ func (m *MultiSource) Recurse(keys ...string) Source {
 }
 
 func (m *MultiSource) recurse(keys ...string) *MultiSource {
+	debug("nflex/multi: Recurse(", keys, ")", id(m), "-> ...")
 	n := make([]Source, 0, len(m.sources))
 	offsets := make([]int, len(keys))
 	for _, source := range m.sources {
@@ -165,13 +176,18 @@ func (m *MultiSource) recurse(keys ...string) *MultiSource {
 		}
 	}
 	if len(n) == 0 {
+		debug("nflex/multi: Recurse(", keys, ")", id(m), "-> nil")
 		return nil
 	}
-	return &MultiSource{
-		first:   m.first,
-		combine: m.combine,
-		sources: n,
+	nm := &MultiSource{
+		first:      m.first,
+		combine:    m.combine,
+		sources:    n,
+		pathToHere: debugCombine(m.pathToHere, keys),
+		debugID:    debugID(),
 	}
+	debug("nflex/multi: Recurse(", keys, ")", id(m), "-> ", id(nm))
+	return nm
 }
 
 // find doesn't guarantee that something exists
