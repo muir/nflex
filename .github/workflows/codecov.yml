@@ -13,6 +13,6 @@ jobs:
         with:
           go-version: '1.16'
       - name: Run coverage
-        run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+        run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic -tags=debugNflex
       - name: Upload coverage to Codecov
         run: env CODECOV_TOKEN=764eb126-04d6-46cf-a952-cb51766c8572 bash <(curl -s https://codecov.io/bash)
