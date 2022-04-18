@@ -24,11 +24,13 @@ func UnmarshalYAML(data []byte) (Source, error) {
 	if err != nil {
 		return parsedYAML{}, errors.Wrap(err, "yaml")
 	}
-	return parsedYAML{
+	p := parsedYAML{
 		root:    &node,
 		cache:   make(map[*yaml.Node]map[string]*yaml.Node),
 		debugID: debugID(),
-	}, nil
+	}
+	debug("nflex/UnmarshalYAML", p.debugID, p.debugKeys)
+	return p, nil
 }
 
 func (p parsedYAML) Exists(keys ...string) bool {
@@ -41,7 +43,7 @@ func (p parsedYAML) Exists(keys ...string) bool {
 
 func (p parsedYAML) Recurse(keys ...string) Source {
 	if len(keys) == 0 {
-		debug("nflex/yaml Recurse()", id(p), "-> self")
+		debug("nflex/yaml Recurse()", id(p), "-> self", p.debugKeys)
 		return p
 	}
 	n, err := p.lookup(p.root, keys)
@@ -49,14 +51,14 @@ func (p parsedYAML) Recurse(keys ...string) Source {
 		debug("nflex/yaml Recurse(", keys, ")", id(p), "-> nil")
 		return nil
 	}
-	ny := parsedYAML{
+	np := parsedYAML{
 		root:       n.root,
 		cache:      p.cache,
 		pathToHere: combine(p.pathToHere, keys),
 		debugID:    debugID(),
 	}
-	debug("nflex/yaml Recurse(", keys, ")", id(p), "->", id(ny))
-	return ny
+	debug("nflex/yaml Recurse(", keys, ")", id(p), "->", id(np), np.debugKeys)
+	return np
 }
 
 func (p parsedYAML) GetBool(keys ...string) (bool, error) {
@@ -170,12 +172,20 @@ func (p parsedYAML) Keys(keys ...string) ([]string, error) {
 	if n == nil {
 		return nil, errors.Wrapf(ErrDoesNotExist, "Could not get %v", combine(p.pathToHere, keys))
 	}
-	if n.root.Kind != yaml.MappingNode {
-		return nil, errors.Wrapf(ErrWrongType, "Len %s is a %d", combine(p.pathToHere, keys), n.root.Kind)
+	root := n.root
+	if root.Kind == yaml.DocumentNode {
+		if len(root.Content) == 0 {
+			// empty document, move right along folks
+			return nil, nil
+		}
+		root = root.Content[0]
 	}
-	ret := make([]string, len(n.root.Content)/2)
-	for i := 0; i < len(n.root.Content); i += 2 {
-		ret[i/2] = n.root.Content[i].Value
+	if root.Kind != yaml.MappingNode {
+		return nil, errors.Wrapf(ErrWrongType, "Keys %s is a %d", combine(p.pathToHere, keys), n.root.Kind)
+	}
+	ret := make([]string, len(root.Content)/2)
+	for i := 0; i < len(root.Content); i += 2 {
+		ret[i/2] = root.Content[i].Value
 	}
 	return ret, nil
 }
@@ -251,4 +261,8 @@ func (p parsedYAML) lookup(n *yaml.Node, keys []string) (*parsedYAML, error) {
 		cache:      p.cache,
 		pathToHere: combine(p.pathToHere, original),
 	}, nil
+}
+
+func (p parsedYAML) debugKeys() string {
+	return debugKeys(p)
 }

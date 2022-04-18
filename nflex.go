@@ -1,3 +1,4 @@
+//go:generate stringer -type=NodeType -output stringer_generated.go
 package nflex
 
 import (

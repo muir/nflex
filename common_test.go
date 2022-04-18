@@ -14,6 +14,7 @@ var content embed.FS
 func TestJSON(t *testing.T) {
 	s, err := UnmarshalFile("common.json", WithFS(content))
 	require.NoError(t, err, "open common.json")
+	checkList(t, top, s)
 	checkList(t, stds, s, "a", "b")
 	checkList(t, nodup, s, "a", "b")
 }
@@ -21,6 +22,7 @@ func TestJSON(t *testing.T) {
 func TestYAML(t *testing.T) {
 	s, err := UnmarshalFile("common.yaml", WithFS(content))
 	require.NoError(t, err, "open common.yaml")
+	checkList(t, top, s)
 	checkList(t, stds, s, "a", "b")
 	checkList(t, nodup, s, "a", "b")
 }
@@ -171,6 +173,14 @@ var stds = []expectation{
 		path: []string{"d"},
 		cmd:  "exists",
 		want: true,
+	},
+}
+
+var top = []expectation{
+	{
+		path: []string{},
+		cmd:  "keys",
+		want: []string{"a"},
 	},
 }
 

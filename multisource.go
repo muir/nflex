@@ -24,7 +24,7 @@ func (m *MultiSource) Copy() *MultiSource {
 		debugID:    debugID(),
 		pathToHere: m.pathToHere,
 	}
-	debug("nflex/multi Copy", id(m), "->", id(c))
+	debug("nflex/multi Copy", id(m), "->", id(c), c.debugKeys)
 	return c
 }
 
@@ -43,15 +43,17 @@ func NewMultiSource(sources ...Source) *MultiSource {
 	if m, ok := sources[0].(*MultiSource); ok {
 		m = m.Copy()
 		m.sources = append(m.sources, sources[1:]...)
-		debug("nflex/multi: New from existing")
+		debug("nflex/multi: New from existing", m.debugKeys)
 		return m
 	}
-	return &MultiSource{
+	m := &MultiSource{
 		first:   true,
 		combine: true,
 		sources: sources,
 		debugID: debugID(),
 	}
+	debug("nflex/multi: New MultiSource", id(m), m.debugKeys)
+	return m
 }
 
 func (m *MultiSource) Mutate(mutation Mutation) Source {
@@ -62,10 +64,10 @@ func (m *MultiSource) Mutate(mutation Mutation) Source {
 		debugID:    debugID(),
 		pathToHere: m.pathToHere,
 	}
-	debug("nflex/multi: Mutate", id(m), "->", id(n))
 	for i, source := range m.sources {
 		n.sources[i] = mutation.Apply(source)
 	}
+	debug("nflex/multi: Mutate", id(m), "->", id(n), n.debugKeys)
 	return n
 }
 
@@ -155,6 +157,9 @@ func (m *MultiSource) Recurse(keys ...string) Source {
 }
 
 func (m *MultiSource) recurse(keys ...string) *MultiSource {
+	if len(keys) == 0 {
+		return m
+	}
 	debug("nflex/multi: Recurse(", keys, ")", id(m), "-> ...")
 	n := make([]Source, 0, len(m.sources))
 	offsets := make([]int, len(keys))
@@ -188,7 +193,7 @@ func (m *MultiSource) recurse(keys ...string) *MultiSource {
 		pathToHere: debugCombine(m.pathToHere, keys),
 		debugID:    debugID(),
 	}
-	debug("nflex/multi: Recurse(", keys, ")", id(m), "-> ", id(nm))
+	debug("nflex/multi: Recurse(", keys, ")", id(m), "-> ", id(nm), nm.debugKeys)
 	return nm
 }
 
@@ -330,4 +335,8 @@ func (m *MultiSource) Len(keys ...string) (int, error) {
 		return 0, errors.Wrapf(ErrDoesNotExist, "key %v does not exist", keys)
 	}
 	return total, nil
+}
+
+func (m *MultiSource) debugKeys() string {
+	return debugKeys(m)
 }
