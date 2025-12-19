@@ -1,5 +1,4 @@
 //go:build debugNflex
-// +build debugNflex
 
 package nflex
 
@@ -24,6 +23,7 @@ func debug(args ...interface{}) {
 	}
 	log.Println(c...)
 }
+
 func debugID() int {
 	return int(atomic.AddInt32(&counter, 1))
 }
